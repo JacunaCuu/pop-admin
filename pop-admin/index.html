@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POP Admin — Aprobaciones</title>
+  <style>
+    :root { --bg:#0b0b0c; --card:#111214; --muted:#8b8e97; --txt:#f7f7f7; --accent:#60a5fa; --ok:#22c55e; --bad:#ef4444; }
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0b0b0c,#15161a);color:var(--txt);font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    header{position:sticky;top:0;background:#0d0f13cc;backdrop-filter:blur(10px);border-bottom:1px solid #20232a}
+    .wrap{max-width:1200px;margin:0 auto;padding:18px}
+    h1{font-size:22px;margin:0;display:flex;align-items:center;gap:10px}
+    .pill{padding:2px 8px;border-radius:999px;background:#1f2430;color:#9aa0aa;font-size:12px;border:1px solid #2a2f3a}
+    .grid{display:grid;gap:16px}
+    .cols-4{grid-template-columns:repeat(4,1fr)}
+    .cols-3{grid-template-columns:repeat(3,1fr)}
+    .cols-2{grid-template-columns:repeat(2,1fr)}
+    .card{background:var(--card);border:1px solid #1f2430;border-radius:16px;box-shadow:0 10px 30px #00000055}
+    .card h3{margin:0 0 8px 0}
+    .p6{padding:16px}
+    .muted{color:var(--muted)}
+    .row{display:flex;align-items:center;gap:10px}
+    .row.wrap{flex-wrap:wrap}
+    .btn{appearance:none;border:1px solid #2a2f3a;background:#181b22;color:#dfe3ea;border-radius:12px;padding:10px 14px;cursor:pointer}
+    .btn:hover{border-color:#3a4252}
+    .btn.primary{background:#1f2937;border-color:#2e3a4d}
+    .btn.cta{background:var(--accent);border:0;color:#071424;font-weight:700}
+    .btn.ok{background:var(--ok);border:0;color:#04130a;font-weight:700}
+    .btn.bad{background:var(--bad);border:0;color:#2f0a0a;font-weight:700}
+    input,select,textarea{width:100%;background:#0f131a;border:1px solid #293042;color:#dfe3ea;border-radius:12px;padding:10px 12px}
+    label{font-size:12px;color:#9aa0aa}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{padding:8px 12px;border:1px solid #2a2f3a;border-radius:999px;background:#12161d;color:#cbd1da;cursor:pointer}
+    .tab.active{background:#263144;color:#eaf0ff;border-color:#3a4a6b}
+    .badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid #2a2f3a;color:#a8b0bd}
+    .badge.ok{background:#102416;color:#7de7a2;border-color:#1e4d2b}
+    .badge.bad{background:#2a1212;color:#ffb4b4;border-color:#5a2323}
+    .media{display:flex;gap:12px}
+    .media img{width:96px;height:96px;object-fit:cover;border-radius:12px;border:1px solid #2a2f3a}
+    .right{margin-left:auto}
+    .footer{padding:30px;text-align:center;color:#8e94a3}
+    .hidden{display:none}
+    .hr{height:1px;background:#20252f;margin:8px 0}
+    .code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;padding:8px;background:#0c0f14;border:1px dashed #2a2f3a;border-radius:8px}
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border-bottom:1px solid #232832;padding:8px;text-align:left}
+    .pagination{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:10px}
+    .toast{position:fixed;bottom:16px;right:16px;background:#0f131a;border:1px solid #2a2f3a;color:#dfe3ea;padding:12px 14px;border-radius:12px;box-shadow:0 10px 30px #00000066}
+    .lightbox{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center}
+    .lightbox.open{display:flex}
+    .lightbox img{max-width:90vw;max-height:80vh;border-radius:16px;border:1px solid #2a2f3a}
+    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0}
+    .kpi .card{padding:14px}
+    .kpi .big{font-size:22px;font-weight:800}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap row">
+      <h1>POP Admin <span class="pill">Lonas · Danglers · Stoppers</span></h1>
+      <div class="right row" id="authBar">
+        <span id="userEmail" class="muted"></span>
+        <button id="btnLogin" class="btn cta">Iniciar sesión</button>
+        <button id="btnLogout" class="btn hidden">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="tabs" id="typeTabs"></div>
+    <div class="row wrap" style="margin-top:8px" id="subTabs"></div>
+
+    <div class="hr"></div>
+
+    <section class="kpi">
+      <div class="card"><div class="muted">Pendientes</div><div class="big" id="kpiPending">—</div></div>
+      <div class="card"><div class="muted">Aprobados</div><div class="big" id="kpiApproved">—</div></div>
+      <div class="card"><div class="muted">Rechazados</div><div class="big" id="kpiRejected">—</div></div>
+      <div class="card"><div class="muted">Total</div><div class="big" id="kpiTotal">—</div></div>
+    </section>
+
+    <div class="toolbar">
+      <input id="q" placeholder="Buscar por título…" style="min-width:260px"/>
+      <label>Desde<input type="date" id="from"/></label>
+      <label>Hasta<input type="date" id="to"/></label>
+      <select id="status">
+        <option value="">Todos</option>
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="APROBADO">Aprobado</option>
+        <option value="RECHAZADO">Rechazado</option>
+      </select>
+      <button class="btn" id="btnFilter">Filtrar</button>
+      <button class="btn" id="btnClear">Limpiar</button>
+      <div class="right" style="margin-left:auto"></div>
+      <button class="btn" id="btnExport">Exportar CSV</button>
+    </div>
+
+    <section id="adminPanel" class="card p6 hidden">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h3>Subir material POP</h3>
+        <span class="badge" id="roleBadge">rol: …</span>
+      </div>
+      <div class="grid cols-2">
+        <div>
+          <label>Tipo</label>
+          <select id="fType"></select>
+        </div>
+        <div>
+          <label>Categoría comercial</label>
+          <select id="fCat"></select>
+        </div>
+        <div>
+          <label>Título / Descripción corta</label>
+          <input id="fTitle" placeholder="Ej. Lona fachada Octubre"/>
+        </div>
+        <div>
+          <label>Precio sugerido</label>
+          <input id="fPrice" type="number" step="0.01" placeholder="Ej. 129.90"/>
+        </div>
+        <div>
+          <label>Imagen (JPG/PNG)</label>
+          <input id="fFile" type="file" accept="image/*"/>
+        </div>
+        <div class="row" style="align-items:flex-end;gap:8px">
+          <button id="btnUpload" class="btn primary">Subir material</button>
+          <span class="muted" id="uploadHint"></span>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:8px">Tip: al crear, el estado inicia como <b>Pendiente</b>. Un comercial deberá aprobar o rechazar.</p>
+    </section>
+
+    <div style="height:12px"></div>
+
+    <section class="grid cols-3" id="cards"></section>
+    <div class="pagination" id="pager"></div>
+
+    <div class="footer">© <span id="year"></span> POP Admin. Construido para aprobaciones rápidas.</div>
+
+    <section class="card p6" style="margin-top:24px">
+      <h3>Cómo usar (resumen rápido)</h3>
+      <ol class="muted">
+        <li>Haz clic en <b>Iniciar sesión</b> (Google). Si eres admin verás el formulario para subir material.</li>
+        <li>Elige <b>Tipo</b> (LONAS/DANGLERS/STOPPERS/STOPPERS CHICOS) y <b>Categoría</b> (RES/POLLO/CERDO/ABARROTES/CONGELADOS).</li>
+        <li>Sube imagen, título y precio sugerido. Aparecerá como <b>Pendiente</b>.</li>
+        <li>Los comerciales entran, filtran por Tipo/Categoría/fecha y presionan <b>Aprobar</b> o <b>Rechazar</b>.</li>
+      </ol>
+      <details>
+        <summary>Configurar Firebase (ya viene listo) ↓</summary>
+        <p class="muted">Este archivo ya incluye tu <span class="code">firebaseConfig</span>. Solo cambia <span class="code">ADMIN_EMAILS</span> por tu correo.</p>
+      </details>
+    </section>
+  </main>
+
+  <div class="lightbox" id="lightbox"><img src="" alt="preview"/></div>
+  <div class="toast hidden" id="toast"></div>
+
+  <script type="module">
+    const TYPES = ["LONAS","DANGLERS","STOPPERS","STOPPERS CHICOS"];
+    const CATS  = ["RES","POLLO","CERDO","ABARROTES","CONGELADOS"];
+
+    let state = { type: TYPES[0], cat: CATS[0], user:null, role:"visitante", items:[], page:1, perPage:12, filters:{q:"", from:null, to:null, status:""} };
+
+    const typeTabs = document.getElementById('typeTabs');
+    const subTabs  = document.getElementById('subTabs');
+    const cards    = document.getElementById('cards');
+    const pager    = document.getElementById('pager');
+    const yearSpan = document.getElementById('year');
+    const authBar  = { email: document.getElementById('userEmail'), login: document.getElementById('btnLogin'), logout: document.getElementById('btnLogout') };
+    const adminPanel = document.getElementById('adminPanel');
+    const roleBadge  = document.getElementById('roleBadge');
+    const fType = document.getElementById('fType');
+    const fCat  = document.getElementById('fCat');
+    const fTitle= document.getElementById('fTitle');
+    const fPrice= document.getElementById('fPrice');
+    const fFile = document.getElementById('fFile');
+    const btnUpload = document.getElementById('btnUpload');
+    const uploadHint = document.getElementById('uploadHint');
+
+    const qInput = document.getElementById('q');
+    const fromInput = document.getElementById('from');
+    const toInput = document.getElementById('to');
+    const statusSel = document.getElementById('status');
+    const btnFilter = document.getElementById('btnFilter');
+    const btnClear  = document.getElementById('btnClear');
+    const btnExport = document.getElementById('btnExport');
+
+    const kpiPending = document.getElementById('kpiPending');
+    const kpiApproved= document.getElementById('kpiApproved');
+    const kpiRejected= document.getElementById('kpiRejected');
+    const kpiTotal   = document.getElementById('kpiTotal');
+
+    const lightbox = document.getElementById('lightbox');
+    const lightImg = lightbox.querySelector('img');
+    const toast    = document.getElementById('toast');
+
+    yearSpan.textContent = new Date().getFullYear();
+
+    function renderTabs(){
+      typeTabs.innerHTML = TYPES.map(t => `<button class="tab ${t===state.type?'active':''}" data-t="${t}">${t}</button>`).join('');
+      subTabs.innerHTML  = CATS.map(c => `<button class="tab ${c===state.cat?'active':''}" data-c="${c}">${c}</button>`).join('');
+      fType.innerHTML = TYPES.map(t=>`<option ${t===state.type?'selected':''}>${t}</option>`).join('');
+      fCat.innerHTML  = CATS.map(c=>`<option ${c===state.cat?'selected':''}>${c}</option>`).join('');
+      bindTabEvents();
+    }
+    function bindTabEvents(){
+      [...typeTabs.querySelectorAll('.tab')].forEach(btn=>btn.onclick = ()=>{ state.type = btn.dataset.t; state.page=1; renderTabs(); fetchAndRender(); });
+      [...subTabs.querySelectorAll('.tab')].forEach(btn=>btn.onclick = ()=>{ state.cat  = btn.dataset.c; state.page=1; renderTabs(); fetchAndRender(); });
+      fType.onchange = ()=> state.type = fType.value;
+      fCat.onchange  = ()=> state.cat  = fCat.value;
+    }
+
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getFirestore, collection, addDoc, doc, setDoc, getDoc, getDocs, query, where, orderBy, serverTimestamp, updateDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCm8lF2g7jhJopkcp3yirZ67TjQYFno36c",
+      authDomain: "pop-admin-joel.firebaseapp.com",
+      projectId: "pop-admin-joel",
+      storageBucket: "pop-admin-joel.firebasestorage.app",
+      messagingSenderId: "668012546274",
+      appId: "1:668012546274:web:4fd8bb1bafb56c483736bb"
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+    const st   = getStorage(app);
+
+    const ADMIN_EMAILS = [
+      "joelacu1@gmail.com"
+    ];
+
+    async function ensureUserDoc(user){
+      const uref = doc(db, 'users', user.uid);
+      const snap = await getDoc(uref);
+      if(!snap.exists()){
+        await setDoc(uref, { email:user.email, role: ADMIN_EMAILS.includes(user.email)?'admin':'comercial', createdAt: serverTimestamp() });
+      }
+      return (await getDoc(uref)).data();
+    }
+
+    authBar.login.onclick = async ()=>{
+      try{
+        const prov = new GoogleAuthProvider();
+        await signInWithPopup(auth, prov);
+      }catch(e){ showToast('Error de login: '+e.message); }
+    };
+    authBar.logout.onclick = ()=> signOut(auth);
+
+    onAuthStateChanged(auth, async (user)=>{
+      state.user = user || null;
+      if(user){
+        authBar.email.textContent = user.email;
+        authBar.login.classList.add('hidden');
+        authBar.logout.classList.remove('hidden');
+        const udata = await ensureUserDoc(user);
+        state.role = ADMIN_EMAILS.includes(user.email) ? 'admin' : (udata?.role||'comercial');
+        roleBadge.textContent = 'rol: '+state.role;
+        adminPanel.classList.toggle('hidden', state.role!=='admin');
+      }else{
+        authBar.email.textContent='';
+        authBar.login.classList.remove('hidden');
+        authBar.logout.classList.add('hidden');
+        state.role='visitante';
+        roleBadge.textContent = 'rol: visitante';
+        adminPanel.classList.add('hidden');
+      }
+      await fetchAndRender();
+    });
+
+    btnUpload.onclick = async ()=>{
+      if(state.role!=='admin') return showToast('Solo admin puede subir material');
+      const title = fTitle.value.trim();
+      const price = parseFloat(fPrice.value || '0');
+      const file  = fFile.files[0];
+      if(!title || !file) return showToast('Falta título o imagen');
+      try{
+        uploadHint.textContent = 'Subiendo imagen…';
+        const path = `materials/${state.type}/${state.cat}/${Date.now()}_${file.name}`;
+        const ref  = sRef(st, path);
+        await uploadBytes(ref, file);
+        const url = await getDownloadURL(ref);
+        uploadHint.textContent = 'Guardando registro…';
+        await addDoc(collection(db,'materials'),{
+          type: state.type,
+          category: state.cat,
+          title,
+          price: isNaN(price)? null : price,
+          imageUrl: url,
+          status: 'PENDIENTE',
+          createdBy: state.user.email,
+          createdAt: serverTimestamp(),
+          approvedBy: null,
+          approvedAt: null,
+        });
+        uploadHint.textContent = 'Listo ✅';
+        fTitle.value=''; fPrice.value=''; fFile.value='';
+        await fetchAndRender();
+        showToast('Material creado');
+      }catch(e){ console.error(e); uploadHint.textContent='Error'; showToast('Error subiendo: '+e.message); }
+      finally{ setTimeout(()=> uploadHint.textContent='', 2000); }
+    };
+
+    async function fetchAndRender(){
+      const qy = query(
+        collection(db,'materials'),
+        where('type','==',state.type),
+        where('category','==',state.cat),
+        orderBy('createdAt','desc')
+      );
+      const snap = await getDocs(qy);
+      let items = snap.docs.map(d=>({ id:d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() || null, approvedAt: d.data().approvedAt?.toDate?.() || null }));
+
+      const { q:qq, from, to, status } = state.filters;
+      if(qq){ items = items.filter(x=> (x.title||'').toLowerCase().includes(qq.toLowerCase())); }
+      if(status){ items = items.filter(x=> (x.status||'')===status); }
+      if(from){ const f = new Date(from); items = items.filter(x=> !x.createdAt || x.createdAt >= f); }
+      if(to){ const t = new Date(to); t.setHours(23,59,59,999); items = items.filter(x=> !x.createdAt || x.createdAt <= t); }
+
+      state.items = items;
+      renderKPIs(items);
+      renderPage();
+    }
+
+    function renderKPIs(items){
+      const total = items.length;
+      const p = items.filter(x=>x.status==='PENDIENTE').length;
+      const a = items.filter(x=>x.status==='APROBADO').length;
+      const r = items.filter(x=>x.status==='RECHAZADO').length;
+      kpiPending.textContent = p; kpiApproved.textContent = a; kpiRejected.textContent = r; kpiTotal.textContent = total;
+    }
+
+    function renderPage(){
+      const start = (state.page-1)*state.perPage;
+      const pageItems = state.items.slice(start, start+state.perPage);
+      cards.innerHTML = pageItems.map(renderCard).join('') || `<div class="muted">No hay materiales en ${state.type} / ${state.cat} con los filtros actuales.</div>`;
+      bindCardButtons(pageItems);
+      const pages = Math.max(1, Math.ceil(state.items.length / state.perPage));
+      pager.innerHTML = `
+        <button class="btn" ${state.page<=1?'disabled':''} id="prev">◀</button>
+        <span class="muted">Página ${state.page} de ${pages}</span>
+        <button class="btn" ${state.page>=pages?'disabled':''} id="next">▶</button>
+      `;
+      document.getElementById('prev').onclick = ()=>{ if(state.page>1){ state.page--; renderPage(); } };
+      document.getElementById('next').onclick = ()=>{ const pages=Math.ceil(state.items.length/state.perPage); if(state.page<pages){ state.page++; renderPage(); } };
+    }
+
+    function renderCard(it){
+      const badge = it.status==='APROBADO' ? '<span class="badge ok">APROBADO</span>' : (it.status==='RECHAZADO' ? '<span class="badge bad">RECHAZADO</span>' : '<span class="badge">PENDIENTE</span>');
+      const price = (it.price!=null && !isNaN(it.price)) ? `$${it.price.toFixed(2)}` : '—';
+      const when  = it.createdAt ? new Date(it.createdAt).toLocaleString() : '—';
+      return `
+      <div class="card p6">
+        <div class="media">
+          <img src="${it.imageUrl}" alt="${it.title}" data-preview="${it.imageUrl}"/>
+          <div style="flex:1">
+            <h3>${it.title}</h3>
+            <div class="row muted" style="gap:8px;flex-wrap:wrap">
+              <span class="badge">${it.type}</span>
+              <span class="badge">${it.category}</span>
+              ${badge}
+              <span class="badge">Precio: ${price}</span>
+              <span class="badge">Creado: ${when}</span>
+            </div>
+            <div class="row" style="margin-top:10px;gap:8px">
+              ${ state.user ? `
+                <button class="btn ok" data-act="ok" data-id="${it.id}">Aprobar</button>
+                <button class="btn bad" data-act="bad" data-id="${it.id}">Rechazar</button>
+              ` : `
+                <span class="muted">Inicia sesión para aprobar</span>
+              `}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function bindCardButtons(items){
+      document.querySelectorAll('[data-act]')?.forEach(btn=>{
+        btn.onclick = async ()=>{
+          if(!state.user) return showToast('Inicia sesión');
+          const id = btn.getAttribute('data-id');
+          const act = btn.getAttribute('data-act');
+          const ref = doc(db,'materials',id);
+          const payload = { status: act==='ok'?'APROBADO':'RECHAZADO', approvedBy: state.user.email, approvedAt: serverTimestamp() };
+          await updateDoc(ref, payload);
+          showToast(act==='ok'?'Aprobado':'Rechazado');
+          fetchAndRender();
+        };
+      });
+      document.querySelectorAll('[data-preview]')?.forEach(img=>{
+        img.onclick = ()=>{ lightImg.src = img.getAttribute('data-preview'); lightbox.classList.add('open'); };
+      });
+      lightbox.onclick = ()=> lightbox.classList.remove('open');
+    }
+
+    btnFilter.onclick = ()=>{
+      state.filters.q = qInput.value.trim();
+      state.filters.from = fromInput.value || null;
+      state.filters.to = toInput.value || null;
+      state.filters.status = statusSel.value || '';
+      state.page = 1; fetchAndRender();
+    };
+    btnClear.onclick = ()=>{
+      qInput.value=''; fromInput.value=''; toInput.value=''; statusSel.value='';
+      state.filters={q:'',from:null,to:null,status:''}; state.page=1; fetchAndRender();
+    };
+
+    btnExport.onclick = ()=>{
+      if(!state.items.length) return showToast('No hay datos para exportar');
+      const headers = ['ID','Tipo','Categoría','Título','Precio','Status','Creado','AprobadoPor'];
+      const rows = state.items.map(x=>[
+        x.id,
+        x.type,
+        x.category,
+        (x.title||'').replaceAll(';',','),
+        (x.price??'').toString().replace('.',','),
+        x.status||'',
+        x.createdAt? new Date(x.createdAt).toISOString(): '',
+        x.approvedBy||''
+      ]);
+      const csv = [headers.join(';')].concat(rows.map(r=>r.join(';'))).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=`pop_${state.type}_${state.cat}.csv`; a.click(); URL.revokeObjectURL(url);
+    };
+
+    function showToast(msg){ toast.textContent = msg; toast.classList.remove('hidden'); setTimeout(()=> toast.classList.add('hidden'), 2000); }
+
+    renderTabs();
+  </script>
+</body>
+</html>
